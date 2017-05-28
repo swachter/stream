@@ -6,8 +6,8 @@ import akka.stream.scaladsl.{Flow, GraphDSL, Keep, Merge}
 
 import scala.util.{Failure, Success, Try}
 
-/** Provides the `bind` combinator that is a generalization of the `via` combinator that allows to feed the output
-  * of a flow into the input of a next flow.
+/** Provides the `bind` combinator that allows to feed the output of a flow into the input of a next flow.
+  * The `bind` combinator is a generalization of the Akka Stream `via` combinator.
   *
   * The functionality of the `bind` combinator is similar to a "monadic" bind operation in that it allows to
   * sequence values through a compound flow while taking care of the context of these values (i.e. involved type
@@ -16,11 +16,11 @@ import scala.util.{Failure, Success, Try}
   * The output type of the first flow might be a possibly nested higher-kinded type whereas the input type of the second
   * flow must be a "simple" type. The `bind` combinator extracts the "simple" value of the output of the first flow
   * if possible and feeds that value into the second flow. If no "simple" value can be extracted then the
-  * second flow can not be executed and the output is "promoted" into a corresponding output of the compound flow.
+  * second flow can not be executed and that output is "promoted" into a corresponding output of the compound flow.
   *
   * The `bind` combinator calculates an output type for the compound flow that depends on the output type of the first
   * flow and the output type of the second flow. The calculation tries to avoid superfluous type constructors by unifying
-  * the stacks of type constructors and deriving minimal adjustments.
+  * the stacks of nested type constructors and deriving minimal adjustments.
   */
 trait BindSupport {
 
