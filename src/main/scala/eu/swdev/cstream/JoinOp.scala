@@ -85,7 +85,7 @@ trait JoinEvBase[Out1, In2, Out2, OutC]
 
 trait JoinEvPrio4 {
 
-  implicit def base[X, Y]: JoinEvBase[X, X, Y, Y] = new JoinEvBase[X, X, Y, Y] {
+  implicit def base[X, Y]: JoinEvBoth[X, X, Y, Y] = new JoinEvBoth[X, X, Y, Y] {
     override def eitherIn2OrOutC(out1: X): Either[X, Y] = Left(out1)
     override def promoteOut2ToOutC(out2: Y): Y          = out2
   }
