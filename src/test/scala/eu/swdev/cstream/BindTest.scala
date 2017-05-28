@@ -12,7 +12,7 @@ import org.scalatest.FunSuite
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-class JoinTest extends FunSuite with TestKitBase with JoinSupport {
+class BindTest extends FunSuite with TestKitBase with BindSupport {
 
   implicit lazy val system  = ActorSystem("test")
   implicit val materializer = ActorMaterializer()
@@ -25,6 +25,16 @@ class JoinTest extends FunSuite with TestKitBase with JoinSupport {
       pub.sendNext(in)
       sub.requestNext(out)
     }
+  }
+
+  test("Simple") {
+
+    // the `bind` combinator can be used like the `via` combinator
+
+    val flow: Flow[Int, Int, NotUsed] =
+      Flow[Int]
+        .map(_.toString)
+        .bind(Flow[String].map(_.length))
   }
 
   test("Option") {
@@ -56,18 +66,14 @@ class JoinTest extends FunSuite with TestKitBase with JoinSupport {
 
   test("Option[Try]]") {
 
+    // optionality propagates; an additional nested `Try` is introduced
+
     val ex = new Exception()
 
     val flow: Flow[Option[String], Option[Try[Int]], NotUsed] =
       Flow[Option[String]]
-        .bind(Flow[String].map(s =>
-          Try {
-            Integer.parseInt(s)
-        }))
-        .bind(Flow[Int].map(i =>
-          Try {
-            10 / i
-          }.recoverWith { case NonFatal(e) => Failure(ex) }))
+        .bind(Flow[String].map(s => Try(Integer.parseInt(s))))
+        .bind(Flow[Int].map(i => Try(10 / i).recoverWith { case NonFatal(e) => Failure(ex) }))
         .bind(Flow[Int].map(_ * 2))
 
     probe(flow)(Some("5") -> Some(Success(4)), Some("0") -> Some(Failure(ex)))
@@ -75,6 +81,8 @@ class JoinTest extends FunSuite with TestKitBase with JoinSupport {
   }
 
   test("Either") {
+
+    // the Left value of an Either is passed through unchanged; the bound flow processes the Right value
 
     val flow: Flow[Either[String, Int], Either[String, Double], NotUsed] =
       Flow[Either[String, Int]]
@@ -86,6 +94,8 @@ class JoinTest extends FunSuite with TestKitBase with JoinSupport {
 
   test("Either (Right to Left)") {
 
+    // the flow that is bound to an Either can output Left values
+
     val flow: Flow[Either[String, Int], Either[String, Double], NotUsed] =
       Flow[Either[String, Int]]
         .bind(Flow[Int].map(_.toDouble).mapConcat(d => List(Left(d.toString), Right(d))))
@@ -96,27 +106,46 @@ class JoinTest extends FunSuite with TestKitBase with JoinSupport {
 
   test("Try -> Either[Try]]") {
 
+    // the "Try" context of the first flow can be unified with the "Either[Try]" context of the second flow
+
+    val ex = new Exception()
+
     val flow: Flow[Try[Int], Either[String, Try[Double]], NotUsed] =
       Flow[Try[Int]]
         .bind(
           Flow[Int]
             .map(_.toDouble)
-            .mapConcat(d =>
-              List(Right(Try {
-                d
-              }), Left(d.toString))))
+            .map(d => Right(Try(d)).asInstanceOf[Either[String, Try[Double]]]))
 
-    probe(flow)(Success(4) -> Right(Success(4.0)))
+    probe(flow)(Success(4) -> Right(Success(4.0)), Failure(ex) -> Right(Failure(ex)))
 
   }
 
   test("Try -> Try[Either]") {
 
+    // the "Try" context of the first flow is added on top of the "Either[String, Double]" context of the second flow
+
+    val ex = new Exception()
+
     val flow: Flow[Try[Int], Try[Either[String, Double]], NotUsed] =
       Flow[Try[Int]]
-        .bind(Flow[Int].map(_.toDouble).mapConcat(d => List(Left(d.toString), Right(d))))
+        .bind(Flow[Int].map(_.toDouble).map(d => Left(d.toString).asInstanceOf[Either[String, Double]]))
 
-    probe(flow)(Success(4) -> Success(Left("4.0")))
+    probe(flow)(Success(4) -> Success(Left("4.0")), Failure(ex) -> Failure(ex))
+  }
+
+  test("Either[Option[Try]]") {
+
+    // superfluous type constructors are avoided
+
+    val flow: Flow[Either[String, Option[Try[Int]]], Either[String, Option[Try[Int]]], NotUsed] =
+      Flow[Either[String, Option[Try[Int]]]]
+        .bind(Flow[Int].map(_ * 2))
+        // the `Try` type constructor is already part of the input type
+        .bind(Flow[Int].map(i => Try(2/i)))
+        // the `Option[Try]` type constructor is already part of the input type
+        .bind(Flow[Int].map(i => Option(Try(2/i))))
+
   }
 
 }
