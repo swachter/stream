@@ -87,21 +87,21 @@ object OutToIn extends LowLevelOutToIn {
 
 }
 
-trait BindEv[Out1, In2, Out2, OutC] {
+trait BindEv[-Out1, In2, -Out2, OutC] {
 
   def eitherIn2OrOutC(out1: Out1): Either[In2, OutC]
   def promoteOut2ToOutC(out2: Out2): OutC
 }
 
-trait BindEvBothOrLeft[Out1, In2, Out2, OutC] extends BindEv[Out1, In2, Out2, OutC]
+trait BindEvBothOrLeft[-Out1, In2, -Out2, OutC] extends BindEv[Out1, In2, Out2, OutC]
 
-trait BindEvBothOrRight[Out1, In2, Out2, OutC] extends BindEv[Out1, In2, Out2, OutC]
+trait BindEvBothOrRight[-Out1, In2, -Out2, OutC] extends BindEv[Out1, In2, Out2, OutC]
 
-trait BindEvBoth[Out1, In2, Out2, OutC] extends BindEvBothOrLeft[Out1, In2, Out2, OutC] with BindEvBothOrRight[Out1, In2, Out2, OutC]
+trait BindEvBoth[-Out1, In2, -Out2, OutC] extends BindEvBothOrLeft[Out1, In2, Out2, OutC] with BindEvBothOrRight[Out1, In2, Out2, OutC]
 
-trait BindEvLeft[Out1, In2, Out2, OutC] extends BindEvBothOrLeft[Out1, In2, Out2, OutC]
+trait BindEvLeft[-Out1, In2, -Out2, OutC] extends BindEvBothOrLeft[Out1, In2, Out2, OutC]
 
-trait BindEvRight[Out1, In2, Out2, OutC] extends BindEvBothOrRight[Out1, In2, Out2, OutC]
+trait BindEvRight[-Out1, In2, -Out2, OutC] extends BindEvBothOrRight[Out1, In2, Out2, OutC]
 
 trait BindEvPrio4 {
 
