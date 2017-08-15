@@ -14,7 +14,7 @@ trait CtxFlow[-In, +Out, Mat] { self =>
   }
 }
 
-object CtxFlow extends BindSupport {
+object CtxFlow extends CtxFlowLiftMapSyntax {
 
   def apply[In]: CtxFlow[In, In, NotUsed] = new CtxFlow[In, In, NotUsed] {
     override def create[Ctx <: StreamCtx]: Flow[(In, Ctx), (In, Ctx), NotUsed] = Flow[(In, Ctx)]
