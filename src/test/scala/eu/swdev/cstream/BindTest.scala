@@ -127,11 +127,11 @@ class BindTest extends FunSuite with TestKitBase with BindSupport {
 
     val ex = new Exception()
 
-    val flow: Flow[Try[Int], Try[Either[String, Double]], NotUsed] =
+    val flow: Flow[Try[Int], Either[String, Try[Double]], NotUsed] =
       Flow[Try[Int]]
         .bind(Flow[Int].map(_.toDouble).map(d => Left(d.toString).asInstanceOf[Either[String, Double]]))
 
-    probe(flow)(Success(4) -> Success(Left("4.0")), Failure(ex) -> Failure(ex))
+    probe(flow)(Success(4) -> Left("4.0"), Failure(ex) -> Right(Failure(ex)))
   }
 
   test("Either[Option[Try]]") {
